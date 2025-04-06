@@ -4,6 +4,58 @@ import MarkdownIt from 'markdown-it';
 import { maybeShowApiKeyBanner } from './gemini-api-banner';
 import './style.css';
 
+var sessButton = document.getElementById("sessionButton");
+let sessStarted = false;
+let captureIntervalID = null; // Store the interval ID
+let timeIntervalID = null;
+let time = 0;
+
+sessButton.addEventListener("click", () => {
+  console.log("Button clicked!");
+  
+  if (!sessStarted) {
+    sessButton.textContent = "stop"; 
+    // captureIntervalID = setInterval(captureImage, 10000);
+    time = 0;
+    timeIntervalID = setInterval(timerFunc, 1000);
+  } else {
+    sessButton.textContent = "start a study session";
+    clearInterval(captureIntervalID);
+    captureIntervalID = null;
+    clearInterval(timeIntervalID);
+    timeIntervalID = null;
+    document.getElementById("timer").innerHTML = "";
+  }
+
+  sessStarted = !sessStarted;
+});
+
+function timerFunc() {
+  time ++;
+  document.getElementById("timer").innerHTML = "" + time;
+  console.log(time);
+
+  let hours = Math.floor(time / 3600);
+  let minutes = Math.floor((time % 3600) / 60);
+  let seconds = time % 60;
+
+  let formattedTime = "";
+
+  if (hours > 0) {
+    formattedTime = 
+      String(hours).padStart(2, '0') + ":" +
+      String(minutes).padStart(2, '0') + ":" +
+      String(seconds).padStart(2, '0');
+  } else {
+    formattedTime =
+      String(minutes).padStart(2, '0') + ":" +
+      String(seconds).padStart(2, '0');
+  }
+
+  document.getElementById("timer").innerHTML = formattedTime;
+}
+
+
 async function getWebCam() {
   try{
     const videoSrc=await navigator.mediaDevices.getUserMedia({ video: true });
@@ -17,7 +69,8 @@ async function getWebCam() {
 getWebCam(); 
 
 function captureImage() {
-  var canvas=document.getElementById("canvas");
+  console.log("Snapping a picture!")
+  const canvas = document.createElement("canvas");
   var context=canvas.getContext('2d');
   var video = document.getElementById("video");
   canvas.width=video.videoWidth;
@@ -27,38 +80,27 @@ function captureImage() {
   analyzeImage(image);
 }
 
-// Start the interval
-setInterval(captureImage, 10000);
-
-// 🔥🔥 FILL THIS OUT FIRST! 🔥🔥
-// Get your Gemini API key by:
-// - Selecting "Add Gemini API" in the "Project IDX" panel in the sidebar
-// - Or by visiting https://g.co/ai/idxGetGeminiKey
 let API_KEY = 'AIzaSyCrjkiCTgZfQp-BYIdPsXC6g6PajzXTYRc';
 let output = document.querySelector('.output');
+let isPersonOnPhone = false;
 
-async function analyzeImage(imageURL) {
+async function analyzeImage(imageDataURL) {
   try {
-    // Load the image as a base64 string
-    let imageBase64 = await fetch(imageURL)
-      .then(r => r.arrayBuffer())
-      .then(a => Base64.fromByteArray(new Uint8Array(a)));
+    const imageBase64 = imageDataURL.split(',')[1];
 
-    // Assemble the prompt by combining the text with the chosen image
-    let contents = [
+    const contents = [
       {
         role: 'user',
         parts: [
-          { inline_data: { mime_type: 'image/jpeg', data: imageBase64, } },
+          { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
           { text: "Is the person in the image on their phone? Enter 0 for no, 1 for yes." }
         ]
       }
     ];
 
-    // Call the multimodal model, and get a stream of results
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash", // or gemini-1.5-pro
+      model: "gemini-1.5-flash",
       safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -69,71 +111,27 @@ async function analyzeImage(imageURL) {
 
     const result = await model.generateContentStream({ contents });
 
-    // Read from the stream and interpret the output as markdown
     let buffer = [];
-    let md = new MarkdownIt();
     for await (let response of result.stream) {
       buffer.push(response.text());
-      console.log(response.text);
-      output.innerHTML = md.render(buffer.join(''));
+    }
+
+    const fullText = buffer.join('').trim();
+
+    // Extract and store 0 or 1 as boolean
+    const match = fullText.match(/\b[01]\b/);
+    isPersonOnPhone = match ? match[0] === "1" : false;
+    if (isPersonOnPhone) {
+      console.log("Person is on phone!");
+      alarm();
     }
   } catch (e) {
-    output.innerHTML += '<hr>' + e;
+    console.error("Error in analyzeImage:", e);
+    isPersonOnPhone = false;
   }
 }
 
-
-// let form = document.querySelector('form');
-// let promptInput = document.querySelector('input[name="prompt"]');
-// let output = document.querySelector('.output');
-
-// form.onsubmit = async (ev) => {
-//   ev.preventDefault();
-//   output.textContent = 'Generating...';
-
-//   try {
-//     // Load the image as a base64 string
-//     let imageUrl = form.elements.namedItem('chosen-image').value;
-//     let imageBase64 = await fetch(imageUrl)
-//       .then(r => r.arrayBuffer())
-//       .then(a => Base64.fromByteArray(new Uint8Array(a)));
-
-//     // Assemble the prompt by combining the text with the chosen image
-//     let contents = [
-//       {
-//         role: 'user',
-//         parts: [
-//           { inline_data: { mime_type: 'image/jpeg', data: imageBase64, } },
-//           { text: promptInput.value }
-//         ]
-//       }
-//     ];
-
-//     // Call the multimodal model, and get a stream of results
-//     const genAI = new GoogleGenerativeAI(API_KEY);
-//     const model = genAI.getGenerativeModel({
-//       model: "gemini-1.5-flash", // or gemini-1.5-pro
-//       safetySettings: [
-//         {
-//           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-//           threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-//         },
-//       ],
-//     });
-
-//     const result = await model.generateContentStream({ contents });
-
-//     // Read from the stream and interpret the output as markdown
-//     let buffer = [];
-//     let md = new MarkdownIt();
-//     for await (let response of result.stream) {
-//       buffer.push(response.text());
-//       output.innerHTML = md.render(buffer.join(''));
-//     }
-//   } catch (e) {
-//     output.innerHTML += '<hr>' + e;
-//   }
-// };
-
-// // You can delete this once you've filled out an API key
-// maybeShowApiKeyBanner(API_KEY);
+const alarm_audio = new Audio('media/alarm.mp3');
+function alarm() {
+  alarm_audio.play();
+}
