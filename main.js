@@ -9,7 +9,7 @@ let sessStarted = false;
 let captureIntervalID = null; // Store the interval ID
 let timeIntervalID = null;
 let time = 0;
-const messages = ["Lock in, slacker!", "Your parents were right; it is that damn phone.", ""];
+const messages = ["Lock in, slacker!"];
 
 sessButton.addEventListener("click", () => {
   console.log("Button clicked!");

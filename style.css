@@ -52,21 +52,13 @@ body {
   background-color: #e38888
 }
 
-.buttonWrapper {
-  display: flex;
-  justify-content: center;
-  padding-bottom: 25px;
-}
-
 .timeButton {
   display: flex;
-  flex-direction: row;
-  align-items: center; */
-  /* justify-content: center;  Horizontally center items 
-  justify-content: left; */
+  align-items: center;
+  justify-content: center; /* Horizontally center items */
+  justify-content: left;
   padding-top: 25px;
   padding-bottom: 25px;
-  padding-left: 50px;
 }
 
 #timer {
@@ -88,6 +80,7 @@ body {
   background-color: #f78a8a;
   color: white;
   padding-top: 10px;
+  word-wrap: break-word;
 }
 
 #alert-message {
