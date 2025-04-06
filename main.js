@@ -9,13 +9,14 @@ let sessStarted = false;
 let captureIntervalID = null; // Store the interval ID
 let timeIntervalID = null;
 let time = 0;
+const messages = ["Lock in, slacker!", "Your parents were right; it is that damn phone.", ""];
 
 sessButton.addEventListener("click", () => {
   console.log("Button clicked!");
   
   if (!sessStarted) {
     sessButton.textContent = "stop"; 
-    // captureIntervalID = setInterval(captureImage, 10000);
+    captureIntervalID = setInterval(captureImage, 10000);
     time = 0;
     timeIntervalID = setInterval(timerFunc, 1000);
   } else {
@@ -134,4 +135,10 @@ async function analyzeImage(imageDataURL) {
 const alarm_audio = new Audio('media/alarm.mp3');
 function alarm() {
   alarm_audio.play();
+  document.getElementById("alert-message").innerHTML = messages[Math.floor(Math.random() * messages.length)];
+  setTimeout(function() {
+    document.getElementById("alert-message").innerHTML = "Keep up the good work!";
+  }, 3000);
 }
+
+maybeShowApiKeyBanner("gemini-demo")
